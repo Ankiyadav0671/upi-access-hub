@@ -309,7 +309,7 @@ def extend_panel(uid: str, days: int):
     S_BU,                                  # boost utr
     S_WD_AMT,                              # withdrawal amount
     S_FS_DISC, S_FS_DUR,                   # flash sale
-) = range(35)
+) = range(33)
 
 # ═══════════════════════════════════════════════════════════════
 #  KEYBOARDS
