@@ -1,20 +1,53 @@
-# UPI Access Hub — Railway Deployment Guide
+# 💳 UPI Access Hub
 
-## 📁 Folder Structure
-```
-upi_access_hub_railway/
-├── bot.py              ← Main bot file
-├── requirements.txt    ← Dependencies
-├── railway.toml        ← Railway config
-├── .env.example        ← Environment variables template
-└── README.md
-```
+**Buy & sell premium courses, mock tests & digital products via Telegram. Pay with UPI, get instant access.**
 
 ---
 
-## 🚂 Deploy to Railway — Step by Step
+## 🔗 Open the Bot
 
-### Step 1: Push to GitHub
+**Telegram:** https://t.me/UPIACCESSBOT
+
+Scan QR → or click the link above → press **Start**. Done. No signup needed.
+
+---
+
+## 👤 New User? Start Here
+
+**Step 1** → Open https://t.me/UPIACCESSBOT  
+**Step 2** → Press **Start**  
+**Step 3** → Browse products, buy with UPI, get instant access  
+
+Want to sell your own courses?  
+**Step 3** → Tap **🚀 Become a Creator** → Fill form → Admin approves → Start selling
+
+---
+
+## ✅ What You Can Do
+
+**As a Student**
+- Browse & buy courses from verified creators
+- Pay via UPI — access delivered instantly
+- Use coupon codes for discounts
+- Refer friends → earn 30% of their purchases
+- Save products to wishlist
+- Rate & review products
+
+**As a Creator**
+- Sell courses, PDFs, mock tests, anything digital
+- Payments go directly to your UPI ID
+- 3-day free trial — zero upfront cost
+- Boost products, run flash sales
+- Broadcast messages to all your students
+- Schedule live class reminders
+- Withdraw your earnings anytime
+- Analytics dashboard with revenue chart
+
+---
+
+## 🛠️ Deploy to Railway
+
+### 1. Push to GitHub
 ```bash
 git init
 git add .
@@ -23,68 +56,71 @@ git remote add origin https://github.com/YOUR_USERNAME/upi-access-hub
 git push -u origin main
 ```
 
-### Step 2: Create Railway Project
-1. Go to [railway.app](https://railway.app)
-2. Click **New Project** → **Deploy from GitHub repo**
-3. Select your repo
+### 2. Create Railway Project
+1. Go to https://railway.app
+2. **New Project** → **Deploy from GitHub** → select your repo
 
-### Step 3: Add Volume (CRITICAL — saves data permanently)
-1. In Railway dashboard → your service → **Settings**
-2. Scroll to **Volumes** → **Add Volume**
-3. Mount path: `/app/data`
-4. Click **Create Volume**
+### 3. Add Volume — REQUIRED ⚠️
+> Railway Settings → Volumes → Add Volume → Mount path: `/app/data`
+>
+> Without this every restart wipes all your data.
 
-### Step 4: Set Environment Variables
-In Railway dashboard → your service → **Variables** → add each:
-
+### 4. Add Environment Variables
 ```
-BOT_TOKEN          = your_bot_token
-SUPER_ADMIN_ID     = 5695957392
-BOT_USERNAME       = UPIAccessbot
-PLATFORM_UPI       = Ankiii@upi
-DATA_FILE          = /app/data/hub_data.json
-CFG_FILE           = /app/data/hub_config.json
+BOT_TOKEN        = paste your token from @BotFather
+SUPER_ADMIN_ID   = your Telegram user ID
+BOT_USERNAME     = UPIACCESSBOT
+PLATFORM_UPI     = Ankiii@upi
+DATA_FILE        = /app/data/hub_data.json
+CFG_FILE         = /app/data/hub_config.json
 ```
 
-### Step 5: Deploy
-Railway auto-deploys on every GitHub push. Click **Deploy** in dashboard.
-
----
-
-## ✅ Verify It's Working
-Check Railway logs — you should see:
+### 5. Deploy
+Railway auto-deploys. Check logs for:
 ```
 🚀 UPI Access Hub v6.0 — Railway Production — LIVE!
-💳 Platform UPI: Ankiii@upi
-📁 Data: /app/data/hub_data.json
 ```
 
----
-
-## 🔄 Update Bot
-Just push to GitHub:
+### Updating Later
 ```bash
-git add .
-git commit -m "update"
-git push
+git add . && git commit -m "update" && git push
 ```
-Railway auto-redeploys in ~30 seconds.
+Redeploys in ~30 seconds.
 
 ---
 
-## 💾 Data Backup
-- Bot auto-backs up data to your Telegram every day at 2 AM IST
-- Manual backup: `/adminpanel` → 💾 Backup
+## 📋 Commands
+
+| Command | Who | What it does |
+|---------|-----|--------------|
+| `/start` | Everyone | Main menu |
+| `/help` | Everyone | Full help guide |
+| `/myproducts` | Students | View purchases |
+| `/wallet` | Students | Wallet & referrals |
+| `/refer` | Students | Get referral link |
+| `/search` | Everyone | Search products |
+| `/topcreators` | Everyone | Creator leaderboard |
+| `/profile CODE` | Everyone | View a creator store |
+| `/dashboard` | Creators | Creator panel |
+| `/addproduct` | Creators | Add new product |
+| `/editproduct` | Creators | Edit existing product |
+| `/renewpanel` | Creators | Renew subscription |
+| `/createcoupon` | Creators | Create discount code |
+| `/broadcast` | Creators | Message all students |
+| `/boostproduct` | Creators | Boost product visibility |
+| `/scheduleclass` | Creators | Set live class reminder |
+| `/adminpanel` | Admin | Admin dashboard |
+| `/approve_creator ID` | Admin | Approve creator |
+| `/verifycreator ID` | Admin | Give verified badge |
+| `/exportdata` | Admin | Download data backup |
+| `/cancel` | Everyone | Cancel current action |
 
 ---
 
-## 🆕 Features in v6.0
-- ⚡ Flash Sales (time-limited discounts with countdown)
-- 🖼️ Product Thumbnails (photos in product cards)
-- ❤️ Student Wishlist
-- 💸 Creator Withdrawal System
-- 📈 Analytics Dashboard (7-day revenue chart)
-- 💾 Daily Auto-Backup to admin
-- ❓ /help command
-- 🔒 Rate Limiting (prevents spam)
-- 🔄 Full data migration from old bot formats
+## 💾 Backup
+Data is auto-backed up to admin Telegram every day at 2:00 AM.
+Manual backup available in Admin Panel → 💾 Backup.
+
+---
+
+**Bot:** https://t.me/UPIACCESSBOT
