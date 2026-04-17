@@ -2496,16 +2496,16 @@ def main():
 
     # ── Single callback router (no duplicate registrations) ──
     # New handlers
-    app.add_handler(H([CallbackQueryHandler(fsm_logo_start,"^cr:logo$")],
+    app.add_handler(CH([CallbackQueryHandler(fsm_logo_start,"^cr:logo$")],
         {S_LOGO:[MessageHandler(filters.PHOTO,fsm_logo_photo)]}))
 
-    app.add_handler(H([CallbackQueryHandler(fsm_ver_start,"^cr:ver_req$")],
+    app.add_handler(CH([CallbackQueryHandler(fsm_ver_start,"^cr:ver_req$")],
         {S_VER_UTR:[MessageHandler(filters.TEXT&~filters.COMMAND,fsm_ver_utr)]}))
 
-    app.add_handler(H([CallbackQueryHandler(fsm_wd_start,"^cr:withdraw$")],
+    app.add_handler(CH([CallbackQueryHandler(fsm_wd_start,"^cr:withdraw$")],
         {S_WD_AMT:[MessageHandler(filters.TEXT&~filters.COMMAND,fsm_wd_amt)]}))
 
-    app.add_handler(H([CallbackQueryHandler(fsm_flash_start,"^flash[|]")],
+    app.add_handler(CH([CallbackQueryHandler(fsm_flash_start,"^flash[|]")],
         {S_FS_DISC:[MessageHandler(filters.TEXT&~filters.COMMAND,fsm_fs_disc)],
          S_FS_DUR:[MessageHandler(filters.TEXT&~filters.COMMAND,fsm_fs_dur)]}))
 
