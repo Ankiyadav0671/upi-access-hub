@@ -313,7 +313,7 @@ def apply_coupon(code: str, price: float, uid: str):
     S_LOGO,
     # Verification UTR
     S_VER_UTR,
-) = range(35)
+) = range(34)
 
 # ═══════════════════════════════════════════════════════════
 #  KEYBOARDS
