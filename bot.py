@@ -989,27 +989,37 @@ async def cb_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     elif d.startswith("adm:rnw|"):
         if not is_admin(uid): return
-        # "adm:rnw|cid|plan"
+        # "adm:rnw|cid|plan|dur"  (dur may be absent for legacy approvals)
         parts = d[8:].split("|")
-        cid, plan = parts[0], parts[1]
-        _extend_panel(cid, 30)
+        cid  = parts[0]
+        plan = parts[1] if len(parts) > 1 else "basic"
+        dur  = parts[2] if len(parts) > 2 else _D["pan_pend"].get(cid, {}).get("dur", "1m")
+        days = DURATIONS.get(dur, 30)
+        _extend_panel(cid, days)
         _D["creators"][cid]["plan"] = plan
         _D["creators"][cid]["ps"]   = "active"
         _D["creators"][cid]["trial_status"] = False
+        # Clear pending entry now that it's approved
+        _D["pan_pend"].pop(cid, None)
         # Creator referral bonus
         ref = _D["crefs"].get(cid)
         if ref and ref in _D["creators"]:
             _extend_panel(ref, 7)
             _D["crefs"][cid] = None
         _save()
-        await send(update, f"✅ Panel renewed for `{cid}` — {plan.title()}", back("adm:home"))
+        dur_label = dur.replace("1m","1 month").replace("3m","3 months").replace("6m","6 months").replace("12m","1 year")
+        await send(update, f"✅ Panel renewed for `{cid}` — {PLANS.get(plan,{}).get('name', plan.title())} · {dur_label}", back("adm:home"))
         try:
-            lim = _C["plans"].get(plan, {}).get("limit", 10)
+            lim     = PLANS.get(plan, PLANS["basic"])["limit"]
+            lim_str = str(lim) if lim < 999999 else "♾️ Unlimited"
             await ctx.bot.send_message(int(cid),
-                f"✅ *Panel Renewed!*\nPlan: *{plan.title()}* | Products: *{lim}* | +30 days\n"
+                f"✅ *Panel Renewed!*\n"
+                f"📦 Plan: *{PLANS.get(plan, {}).get('name', plan.title())}* | Products: *{lim_str}*\n"
+                f"⏳ Duration: *{dur_label}* (+{days} days)\n"
                 f"Use /dashboard to manage 🚀",
                 parse_mode=MD, reply_markup=KB_CREATOR)
         except: pass
+
 
     elif d.startswith("adm:bst|"):
         if not is_admin(uid): return
@@ -1876,29 +1886,45 @@ async def fsm_plan_pick(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     return S_RUTR
 
 async def fsm_rutr(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    uid = str(update.effective_user.id)
-    utr = update.message.text.strip().replace(" ","")
+    uid  = str(update.effective_user.id)
+    user = update.effective_user
+    utr  = update.message.text.strip().replace(" ","")
     if not valid_utr(utr):
         await update.message.reply_text("❌ Invalid UTR. Try again:"); return S_RUTR
     if utr_used(utr):
         await update.message.reply_text("❌ UTR already used!"); return S_RUTR
-    plan = ctx.user_data.get("renew_plan","basic")
+    plan  = ctx.user_data.get("renew_plan", "basic")
+    dur   = ctx.user_data.get("renew_dur",  "1m")
+    price = PLANS.get(plan, PLANS["basic"]).get(dur, 199)
     _D["utr_log"].append(utr.upper())
-    _D["pan_pend"][uid] = {"plan": plan, "utr": utr.upper(), "ts": now()}
+    _D["pan_pend"][uid] = {"plan": plan, "dur": dur, "utr": utr.upper(), "ts": now()}
     _save()
     await update.message.reply_text(
         "✅ *UTR Submitted!* Admin will verify & activate shortly. 🎉", parse_mode=MD)
     try:
-        price = _C["plans"].get(plan,{}).get("price",199)
-        await update.get_bot().send_message(ADMIN_ID,
-            f"💳 *Panel Renewal*\nCreator: `{uid}`\n"
-            f"Plan: *{plan.title()}*  |  ₹{price}\n"
-            f"UTR: `{utr}`  |  UPI: {PAY_UPI}",
+        uname     = f"@{user.username}" if user.username else user.full_name or uid
+        dur_label = dur.replace("1m","1 month").replace("3m","3 months").replace("6m","6 months").replace("12m","1 year")
+        days      = DURATIONS.get(dur, 30)
+        await ctx.bot.send_message(
+            ADMIN_ID,
+            f"🔔 *Panel Renewal — Pending Approval*\n"
+            f"━━━━━━━━━━━━━━━━━━━━\n"
+            f"👤 User: {esc(uname)} (`{uid}`)\n"
+            f"📦 Plan: *{PLANS[plan]['name']}*\n"
+            f"⏳ Duration: *{dur_label}* ({days} days)\n"
+            f"💰 Amount: *₹{price}*\n"
+            f"🔑 UTR: `{utr.upper()}`\n"
+            f"📲 UPI: `{PAY_UPI}`\n"
+            f"🕐 Submitted: {now()}",
             parse_mode=MD,
-            reply_markup=kb([ib(f"✅ Approve {plan.title()}", f"adm:rnw|{uid}|{plan}"),
-                             ib("❌ Reject", f"adm:rjt|{uid}")]))
+            reply_markup=kb(
+                [ib(f"✅ Approve — {PLANS[plan]['name']}", f"adm:rnw|{uid}|{plan}|{dur}")],
+                [ib("❌ Reject", f"adm:rjt|{uid}")],
+            ),
+        )
     except: pass
     return ConversationHandler.END
+
 
 # ── COUPON CREATION ────────────────────────────────────────
 async def fsm_cpn_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
