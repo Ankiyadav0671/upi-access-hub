@@ -1021,6 +1021,26 @@ async def cb_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         except: pass
 
 
+    elif d.startswith("adm:reject_renew|"):
+        if not is_admin(uid): return
+        cid = d[17:]
+        pend = _D["pan_pend"].pop(cid, None)
+        _save()
+        await send(update,
+            f"❌ *Renewal rejected* for `{cid}`.",
+            back("adm:home"))
+        try:
+            utr_info = f"\nUTR: `{pend['utr']}`" if pend and pend.get("utr") else ""
+            await ctx.bot.send_message(int(cid),
+                f"❌ *Panel Renewal Rejected*\n\n"
+                f"Your renewal payment could not be verified.{utr_info}\n\n"
+                f"Please double-check the UTR and try again, or contact support.",
+                parse_mode=MD,
+                reply_markup=kb([ib("🔄 Try Again", "cr:renew")],
+                                [ib("🏠 Home", "home")]))
+        except: pass
+
+
     elif d.startswith("adm:bst|"):
         if not is_admin(uid): return
         parts = d[8:].split("|")
@@ -1909,7 +1929,7 @@ async def fsm_rutr(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             ADMIN_ID,
             f"🔔 *Panel Renewal — Pending Approval*\n"
             f"━━━━━━━━━━━━━━━━━━━━\n"
-            f"👤 User: {esc(uname)} (`{uid}`)\n"
+            f"👤 Creator: {esc(uname)} (`{uid}`)\n"
             f"📦 Plan: *{PLANS[plan]['name']}*\n"
             f"⏳ Duration: *{dur_label}* ({days} days)\n"
             f"💰 Amount: *₹{price}*\n"
@@ -1919,7 +1939,7 @@ async def fsm_rutr(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             parse_mode=MD,
             reply_markup=kb(
                 [ib(f"✅ Approve — {PLANS[plan]['name']}", f"adm:rnw|{uid}|{plan}|{dur}")],
-                [ib("❌ Reject", f"adm:rjt|{uid}")],
+                [ib("❌ Reject Renewal", f"adm:reject_renew|{uid}")],
             ),
         )
     except: pass
