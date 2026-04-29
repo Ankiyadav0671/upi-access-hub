@@ -2498,6 +2498,12 @@ def main():
          S_EV:[MessageHandler(filters.TEXT&~filters.COMMAND, fsm_ev)]}))
 
     app.add_handler(CH(
+        [CommandHandler("broadcast", fsm_bc_start),
+         CallbackQueryHandler(fsm_bc_start, pattern="^cr:bc$")],
+        {S_BT:[CallbackQueryHandler(fsm_bt, pattern="^bct\\|")],
+         S_BM:[MessageHandler(filters.TEXT&~filters.COMMAND, fsm_bm)]}))
+
+    app.add_handler(CH(
         [CallbackQueryHandler(cb_buy_entry, pattern="^buy\\|")],
         {S_CPN:[MessageHandler(filters.TEXT&~filters.COMMAND, fsm_coupon),
                 CallbackQueryHandler(cb_skip_coupon, pattern="^skp\\|")],
@@ -2514,12 +2520,6 @@ def main():
          S_VD:[MessageHandler(filters.TEXT&~filters.COMMAND, fsm_vd)],
          S_VX:[MessageHandler(filters.TEXT&~filters.COMMAND, fsm_vx)],
          S_VM:[MessageHandler(filters.TEXT&~filters.COMMAND, fsm_vm)]}))
-
-    app.add_handler(CH(
-        [CommandHandler("broadcast", fsm_bc_start),
-         CallbackQueryHandler(fsm_bc_start, pattern="^cr:bc$")],
-        {S_BT:[CallbackQueryHandler(fsm_bt, pattern="^bct\\|")],
-         S_BM:[MessageHandler(filters.TEXT&~filters.COMMAND, fsm_bm)]}))
 
     app.add_handler(CH(
         [CommandHandler("search", fsm_srch_start),
