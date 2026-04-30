@@ -313,7 +313,9 @@ def apply_coupon(code: str, price: float, uid: str):
     S_LOGO,
     # Verification UTR
     S_VER_UTR,
-) = range(34)
+    # UPI ID update
+    S_UPI,
+) = range(35)
 
 # ═══════════════════════════════════════════════════════════
 #  KEYBOARDS
@@ -604,7 +606,7 @@ async def cb_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     elif d == "cr:wlt_renew":
         c    = _D["creators"].get(uid, {})
         plan = c.get("plan", "basic")
-        cost = _C["plans"].get(plan, {}).get("price", 199)
+        cost = PLANS.get(plan, PLANS["basic"]).get("1m", 199)
         bal  = c.get("wallet", 0.0)
         if bal < cost:
             await alert(update, f"Need ₹{cost} in wallet. Current: ₹{bal:.0f}")
@@ -693,11 +695,15 @@ async def cb_router(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         code = c.get("code", "")
         link = f"https://t.me/{BOT_USER}?start={code}" if code else "Not activated yet"
         mode = c.get("mode", "manual").title()
+        upi  = c.get("upi", "")
+        upi_display = f"`{esc(upi)}`" if upi else "_Not set_"
         await send(update,
             f"⚙️ *Creator Settings*\n━━━━━━━━━━━━━━\n"
             f"Approval: *{mode}*\n"
+            f"💳 UPI ID: {upi_display}\n"
             f"Code: `{code}`\nLink: {link}",
             kb([ib("🔄 Toggle Approval Mode", "cr:amode")],
+               [ib("💳 Update UPI ID", "cr:set_upi")],
                [ib("🔗 My Store Link", "cr:mystore")],
                [ib("🖼️ Upload Logo", "cr:logo")],
                [ib("🏅 Request Verification (₹99)", "cr:ver_req")],
@@ -1215,15 +1221,19 @@ async def _creator_wallet(update: Update, uid: str):
     c    = _D["creators"].get(uid, {})
     bal  = c.get("wallet", 0.0)
     plan = c.get("plan", "basic")
-    cost = _C["plans"].get(plan, {}).get("price", 199)
+    cost = PLANS.get(plan, PLANS["basic"]).get("1m", 199)
     bc   = _C.get("boost_cost", 29)
+    upi  = c.get("upi", "")
+    upi_line = f"💳 UPI: `{esc(upi)}`" if upi else "💳 UPI: _Not set_ — add in ⚙️ Settings"
     await send(update,
         f"💰 *Creator Wallet*\n━━━━━━━━━━━━━━\n"
-        f"Balance: *₹{bal:,.2f}*\n\n"
+        f"Balance: *₹{bal:,.2f}*\n"
+        f"{upi_line}\n\n"
         f"• 🔄 Renew panel: ₹{cost}\n"
         f"• ⚡ Boost product: ₹{bc}",
         kb([ib(f"🔄 Renew (₹{cost})", "cr:wlt_renew")],
            [ib(f"⚡ Boost (₹{bc})",   "cr:wlt_boost")],
+           [ib("💸 Withdraw",          "cr:withdraw")],
            [ib("🔙 Dashboard",         "cr:dash")]))
 
 # ═══════════════════════════════════════════════════════════
@@ -2147,6 +2157,43 @@ async def fsm_logo_photo(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         parse_mode=MD,reply_markup=back("cr:set"))
     return ConversationHandler.END
 
+# ═══ UPI ID UPDATE ═══
+async def fsm_upi_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    if update.callback_query: await update.callback_query.answer()
+    uid = str(update.effective_user.id)
+    if not is_creator(uid):
+        await alert(update, "Not a creator!"); return ConversationHandler.END
+    c = _D["creators"].get(uid, {})
+    cur = c.get("upi", "")
+    cur_line = f"Current: `{esc(cur)}`" if cur else "No UPI ID set yet."
+    await send(update,
+        f"💳 *Update UPI ID*\n━━━━━━━━━━━━━━\n"
+        f"{cur_line}\n\n"
+        f"Send your UPI ID (e.g. `name@upi` or `9876543210@paytm`):\n"
+        f"_This is where you'll receive payments._")
+    return S_UPI
+
+async def fsm_upi_save(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    uid = str(update.effective_user.id)
+    upi = update.message.text.strip()
+    # Basic UPI ID validation: must contain @, no spaces, reasonable length
+    if not re.match(r"^[\w.\-]{2,}@[\w]{2,}$", upi):
+        await update.message.reply_text(
+            "❌ *Invalid UPI ID format.*\n"
+            "Expected format: `name@upi` or `9876543210@paytm`\n\n"
+            "Please try again:",
+            parse_mode=MD)
+        return S_UPI
+    _D["creators"].setdefault(uid, {})["upi"] = upi
+    _save()
+    await update.message.reply_text(
+        f"✅ *UPI ID saved!*\n\n"
+        f"💳 `{esc(upi)}`\n\n"
+        f"Payments & withdrawals will be sent to this UPI ID.",
+        parse_mode=MD,
+        reply_markup=back("cr:set"))
+    return ConversationHandler.END
+
 # ═══ VERIFICATION UTR ═══
 async def fsm_ver_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if update.callback_query: await update.callback_query.answer()
@@ -2181,7 +2228,15 @@ async def fsm_wd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     uid=str(update.effective_user.id)
     c=_D["creators"].get(uid,{}); bal=c.get("wallet",0.0)
     if bal<100: await alert(update,f"Min ₹100. Balance: ₹{bal:.0f}"); return ConversationHandler.END
-    await send(update,f"💸 *Withdrawal*\nWallet: *₹{bal:,.2f}*\nUPI: `{esc(c.get('upi',''))}`\n\nEnter amount (min ₹100):")
+    upi=c.get("upi","")
+    if not upi:
+        await send(update,
+            "❌ *No UPI ID set!*\n\n"
+            "You must add your UPI ID before withdrawing.\n"
+            "Go to ⚙️ Settings → 💳 Update UPI ID.",
+            kb([ib("💳 Add UPI ID","cr:set_upi")],[ib("🔙 Back","cr:wlt")]))
+        return ConversationHandler.END
+    await send(update,f"💸 *Withdrawal*\nWallet: *₹{bal:,.2f}*\nUPI: `{esc(upi)}`\n\nEnter amount (min ₹100):")
     return S_WD_AMT
 
 async def fsm_wd_amt(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
@@ -2544,6 +2599,9 @@ def main():
     # New handlers
     app.add_handler(CH([CallbackQueryHandler(fsm_logo_start,"^cr:logo$")],
         {S_LOGO:[MessageHandler(filters.PHOTO,fsm_logo_photo)]}))
+
+    app.add_handler(CH([CallbackQueryHandler(fsm_upi_start,"^cr:set_upi$")],
+        {S_UPI:[MessageHandler(filters.TEXT&~filters.COMMAND,fsm_upi_save)]}))
 
     app.add_handler(CH([CallbackQueryHandler(fsm_ver_start,"^cr:ver_req$")],
         {S_VER_UTR:[MessageHandler(filters.TEXT&~filters.COMMAND,fsm_ver_utr)]}))
